@@ -1,0 +1,23 @@
+[
+    {
+        "caption": "Preferences: NeoCodeMap Settings",
+        "command": "edit_settings",
+        "args":
+        {
+            "base_file": "${packages}/NeoCodeMap/NeoCodeMap.sublime-settings",
+            "default": "{\n\t$0\n}\n"
+        }
+    },
+    {
+        "caption": "NeoCodeMap: Open Readme",
+        "command": "open_file",
+        "args":
+        {
+            "file": "${packages}/NeoCodeMap/README.md"
+        }
+    },
+    {
+    	"caption": "NeoCodeMap: Toggle",
+    	"command": "toggle_neo_code_map"
+    }
+]

@@ -1,0 +1,13 @@
+{
+	// Set the name displayed in the code map tab
+	"neocodemap_tab_name": "NeoCodeMap",
+
+	// Set the width of the codemap column
+	"neocodemap_width": 0.17,
+
+	// Behavior of the auto layout (todo)
+	//   - auto: opposite position of the sidebar
+	//   - left: on left
+	//   - right: on right
+	"neocodemap_position": "auto",
+}

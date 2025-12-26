@@ -5,7 +5,7 @@
 	// Set the width of the codemap column
 	"neocodemap_width": 0.17,
 
-	// Behavior of the auto layout (todo)
+	// Behavior of the auto layout
 	//   - auto: opposite position of the sidebar
 	//   - left: on left
 	//   - right: on right

@@ -1,0 +1,62 @@
+html {
+	padding: 0;
+}
+
+.kind {
+	font-weight: bold;
+	font-style: italic;
+	width: 1.5rem;
+	display: inline-block;
+	text-align: center;
+	font-family: system;
+	line-height: 1.3;
+	border-radius: 2px;
+	position: relative;
+	top: 1px;
+	margin-left: 6px;
+	margin-right: 6px;
+}
+
+.kind_ambiguous {
+	display: none;
+}
+
+.kind_keyword {
+	background-color: color(var(--pinkish) a(0.2));
+	color: var(--pinkish);
+}
+
+.kind_type {
+	background-color: color(var(--purplish) a(0.2));
+	color: var(--purplish);
+}
+
+.kind_function {
+	background-color: color(var(--redish) a(0.2));
+	color: var(--redish);
+}
+
+.kind_namespace {
+	background-color: color(var(--bluish) a(0.2));
+	color: var(--bluish);
+}
+
+.kind_navigation {
+	background-color: color(var(--yellowish) a(0.2));
+	color: var(--yellowish);
+}
+
+.kind_markup {
+	background-color: color(var(--orangish) a(0.2));
+	color: var(--orangish);
+}
+
+.kind_variable {
+	background-color: color(var(--cyanish) a(0.2));
+	color: var(--cyanish);
+}
+
+.kind_snippet {
+	background-color: color(var(--greenish) a(0.2));
+	color: var(--greenish);
+}

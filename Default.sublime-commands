@@ -19,5 +19,9 @@
     {
     	"caption": "NeoCodeMap: Toggle",
     	"command": "toggle_neo_code_map"
+    },
+    {
+        "caption": "NeoCodeMap: Close All",
+        "command": "close_all_neo_code_map"
     }
 ]

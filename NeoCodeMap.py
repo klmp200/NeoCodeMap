@@ -16,7 +16,7 @@ def plugin_loaded():
 
 
 def plugin_unloaded():
-    pass
+    map_manager.clear() 
 
 
 class CodeMapManager:
@@ -36,10 +36,12 @@ class CodeMapManager:
 
     @property
     def tab_name(self) -> str:
+        """Tab name to display on sheet"""
         return str(settings.get("neocodemap_tab_name"))
 
     @property
     def layout_position(self) -> Union[Literal["left"], Literal["right"]]:
+        """Get preferred layout position from settings"""
         desired = str(settings.get("neocodemap_position")).lower()
         if desired in ["left", "right"]:
             return desired
@@ -50,25 +52,46 @@ class CodeMapManager:
 
         return "right"
 
+    def clear(self):
+        """Delete all html sheets on all windows"""
+        for sheet_id in self._html_sheets:
+            for window in sublime.windows():
+                sheet = self.get_sheet(window)
+                if sheet:
+                    self.hide(sheet, window)
+        self._html_sheets = []
 
     def is_code_map(self, sheet: Union[sublime.Sheet, sublime.HtmlSheet]) -> bool:
+        """Test if sheet is managed by this plugin"""
         return isinstance(sheet, sublime.HtmlSheet) and sheet.id() in self._html_sheets
 
-    def get_sheet(self) -> Union[sublime.HtmlSheet, None]:
-        for sheet in sublime.active_window().sheets():
+    def get_sheet(self, window: Optional[sublime.Window] = None) -> Optional[sublime.HtmlSheet]:
+        """Get a sheet from a specified window. Get from active window if unspecified"""
+        if not window:
+            window = sublime.active_window()
+
+        for sheet in window.sheets():
             if self.is_code_map(sheet):
                 return sheet
         return None
 
-    def is_visible(self) -> bool:
-        sheet = self.get_sheet()
+    def is_visible(self, sheet: Optional[sublime.HtmlSheet] = None, window: Optional[sublime.Window] = None) -> bool:
+        """Return True if the specified sheet on the specified window is the selected tab
+        If no window is specified, the active window is used
+        If no sheet is specified, it will be fetched from the provided (or not) window"""
+
+        if not window:
+            window = sublime.active_window()
+        if not sheet:
+            sheet = self.get_sheet(window)
         if not sheet:
             return False
-        return sheet == sublime.active_window().active_sheet_in_group(
+        return sheet == window.active_sheet_in_group(
             sublime.active_window().get_sheet_index(sheet)[0]
         )
 
     def update_sheet(self, sheet: Optional[sublime.HtmlSheet] = None) -> bool:
+        """Update the html content of a provided sheet"""
         if not sheet:
             sheet = self.get_sheet()
         if not sheet:
@@ -106,11 +129,14 @@ class CodeMapManager:
         window.run_command("set_layout", layout)
         return window.num_groups()
 
-    def show(self) -> bool:
-        if self.is_visible():
+    def show(self, window: Optional[sublime.Window] = None) -> bool:
+        """Show the html sheet on the specified window. Use the active window if unspecified"""
+        if not window:
+            window = sublime.active_window()
+
+        if self.is_visible(window=window):
             return False
 
-        window = sublime.active_window()
         original_view = window.active_view()
 
         # Cleanup previous group
@@ -121,7 +147,7 @@ class CodeMapManager:
         group = self.create_layout(window)
 
         # Create new sheet
-        sheet = sublime.active_window().new_html_sheet(
+        sheet = window.new_html_sheet(
             self.tab_name, self.get_html(original_view)
         )
         self._html_sheets.append(sheet.id())
@@ -133,12 +159,20 @@ class CodeMapManager:
 
         return True
 
-    def hide(self) -> bool:
-        sheet = self.get_sheet()
-        if sheet is None:
+    def hide(self, sheet: Optional[sublime.HtmlSheet] = None, window: Optional[sublime.Window] = None) -> bool:
+        """Hide the specified sheet on the specified window.
+        Get the sheet from the specified window if unspecified.
+        Get the active window if unspecified"""
+
+        if not sheet:
+            sheet = self.get_sheet()
+
+        if not sheet:
             return False
 
-        window = sublime.active_window()
+        if not window:
+            window = sublime.active_window()
+
         original_view = window.active_view()
 
         group = sheet.group()
@@ -162,12 +196,18 @@ class CodeMapManager:
 
         return True
 
-    def toggle(self) -> bool:
-        if self.is_visible():
-            return self.hide()
-        return self.show()
+    def toggle(self, window: Optional[sublime.Window] = None) -> bool:
+        """Toggle the display of the sheet from the specified window.
+        Get the active window if unspecified"""
+
+        if self.is_visible(window=window):
+            return self.hide(window=window)
+        return self.show(window)
 
     def get_html(self, view: Optional[sublime.View] = None) -> str:
+        """Build the HTML content for a sheet based on the content of the specified view.
+        Get the current active view from the current active window if unspecified"""
+
         window = sublime.active_window()
         if not view:
             view = window.active_view()
@@ -211,11 +251,18 @@ class CodeMapManager:
         return html
 
 
-class ToggleNeoCodeMap(sublime_plugin.TextCommand):
-    def run(self, edit: sublime.Edit):
-        map_manager.toggle()
+class ToggleNeoCodeMap(sublime_plugin.WindowCommand):
+    """Toggle the code map"""
+    def run(self):
+        map_manager.toggle(self.window)
+
+class CloseAllNeoCodeMap(sublime_plugin.ApplicationCommand):
+    """Close all code maps from all windows"""
+    def run(self):
+        map_manager.clear()
 
 class GotoViewRegionNeoCodeMap(sublime_plugin.ApplicationCommand):
+    """Unexposed: used as a callback when clicking on html links in the code map"""
     def run(self, view_id: int, region_a: int):
         view = sublime.View(view_id)
         region = sublime.Region(region_a)
@@ -225,6 +272,7 @@ class GotoViewRegionNeoCodeMap(sublime_plugin.ApplicationCommand):
         sublime.active_window().focus_view(view)
 
 class NavigationListener(sublime_plugin.EventListener):
+    """Synchronize codemap with user activity"""
     def on_selection_modified_async(self, view: sublime.View):
         map_manager.update_sheet()
 

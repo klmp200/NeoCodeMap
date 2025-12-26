@@ -3,7 +3,7 @@
 	"neocodemap_tab_name": "NeoCodeMap",
 
 	// Set the width of the codemap column
-	"neocodemap_width": 0.17,
+	"neocodemap_width": 0.20,
 
 	// Behavior of the auto layout
 	//   - auto: opposite position of the sidebar

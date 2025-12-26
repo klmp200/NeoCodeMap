@@ -200,9 +200,9 @@ class GotoViewRegionNeoCodeMap(sublime_plugin.ApplicationCommand):
         view.show_at_center(region, animate=True)
         sublime.active_window().focus_view(view)
 
-
-
-class SheetListener(sublime_plugin.EventListener):
-    def on_modified_async(self, view: sublime.View):
+class NavigationListener(sublime_plugin.EventListener):
+    def on_selection_modified_async(self, view: sublime.View):
         map_manager.update_sheet()
 
+    def on_activated(self, view: sublime.View):
+        map_manager.update_sheet()

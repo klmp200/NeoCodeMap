@@ -1,5 +1,5 @@
-html {
-	padding: 0;
+a {
+	text-decoration: none;
 }
 
 .kind {
@@ -59,4 +59,8 @@ html {
 .kind_snippet {
 	background-color: color(var(--greenish) a(0.2));
 	color: var(--greenish);
+}
+
+.active {
+	background-color: color(var(--foreground) alpha(0.25));
 }

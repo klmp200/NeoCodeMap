@@ -74,6 +74,7 @@ class CodeMapManager:
         if not sheet:
             return False
         sheet.set_contents(self.get_html())
+        return True
 
     def create_layout(self, window: sublime.Window) -> int:
         """Create the layout and return the newly created group"""
@@ -170,16 +171,39 @@ class CodeMapManager:
         window = sublime.active_window()
         if not view:
             view = window.active_view()
+
         if not view:
             return ""
 
         html = f"<body><style>{css}</style>"
-        for symbol in view.symbol_regions():
+        selected_lines = [view.rowcol(region.a)[0] for region in view.sel()]
+
+        def is_active(symbol: sublime.SymbolRegion, next_symbol: Optional[sublime.SymbolRegion]) -> bool:
+            current_line = view.rowcol(symbol.region.a)[0]
+            next_line = view.rowcol(next_symbol.region.a)[0] if next_symbol else len(view.lines(sublime.Region(0, view.size())))
+
+            for line in selected_lines:
+                if line >= current_line and line < next_line:
+                    return True
+
+            return False
+
+        symbol_regions = view.symbol_regions()
+        for i, symbol in enumerate(symbol_regions):
             kind_id, short_type, long_type = symbol.kind
+            next_symbol = symbol_regions[i+1] if i+1 < len(symbol_regions) else None
             html += f"""
-            <p>
-                <i class='{self.KIND_CLASS_NAMES.get(kind_id, 'kind kind_ambiguous')}' title='{long_type}'>{short_type}</i>
-                <a href='{sublime.command_url('goto_view_region_neo_code_map', {'view_id': view.id(), 'region_a': symbol.region.a})}'>{symbol.name}</a>
+            <p
+                class='{'active' if is_active(symbol, next_symbol) else ''}'
+            >
+                <i
+                    class='{self.KIND_CLASS_NAMES.get(kind_id, 'kind kind_ambiguous')}'
+                    title='{long_type}'
+                >{short_type}</i>
+                <a
+                    href='{sublime.command_url('goto_view_region_neo_code_map', {'view_id': view.id(), 'region_a': symbol.region.a})}'
+                    title='{view.rowcol(symbol.region.a)}'
+                >{symbol.name}</a>
             </p>
             """
         html += "</body>"

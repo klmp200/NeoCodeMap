@@ -179,7 +179,7 @@ class CodeMapManager:
             html += f"""
             <p>
                 <i class='{self.KIND_CLASS_NAMES.get(kind_id, 'kind kind_ambiguous')}' title='{long_type}'>{short_type}</i>
-                <a href='{sublime.command_url('goto_view_region_neo_code_map', {'view_id': view.id(), 'region_a': symbol.region.a, 'region_b': symbol.region.b})}'>{symbol.name}</a>
+                <a href='{sublime.command_url('goto_view_region_neo_code_map', {'view_id': view.id(), 'region_a': symbol.region.a})}'>{symbol.name}</a>
             </p>
             """
         html += "</body>"
@@ -192,9 +192,9 @@ class ToggleNeoCodeMap(sublime_plugin.TextCommand):
         map_manager.toggle()
 
 class GotoViewRegionNeoCodeMap(sublime_plugin.ApplicationCommand):
-    def run(self, view_id: int, region_a: int, region_b: int):
+    def run(self, view_id: int, region_a: int):
         view = sublime.View(view_id)
-        region = sublime.Region(region_a, region_b)
+        region = sublime.Region(region_a)
         view.sel().clear()
         view.sel().add(region)
         view.show_at_center(region, animate=True)

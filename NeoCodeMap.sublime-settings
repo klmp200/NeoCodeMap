@@ -10,4 +10,9 @@
 	//   - left: on left
 	//   - right: on right
 	"neocodemap_position": "auto",
+
+	// Enable indentation of methods in classes
+	// This can sometimes be unreliable or using
+	// too much width for your liking
+	"neocodemap_enable_indent": true
 }

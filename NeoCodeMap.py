@@ -228,13 +228,24 @@ class CodeMapManager:
 
             return False
 
+        def indent_css(symbol: sublime.SymbolRegion) -> str:
+            if not settings.get("neocodemap_enable_indent"):
+                return ""
+
+            level = view.indentation_level(symbol.region.a)
+            if level == 0:
+                return ""
+            return f"margin-left: {0.5 + level * 1.6}rem;"
+            
         symbol_regions = view.symbol_regions()
         for i, symbol in enumerate(symbol_regions):
             kind_id, short_type, long_type = symbol.kind
             next_symbol = symbol_regions[i+1] if i+1 < len(symbol_regions) else None
+
             html += f"""
-            <p
-                class='{'active' if is_active(symbol, next_symbol) else ''}'
+            <div
+                class='item {'active' if is_active(symbol, next_symbol) else ''}'
+                style='{indent_css(symbol)}'
             >
                 <i
                     class='{self.KIND_CLASS_NAMES.get(kind_id, 'kind kind_ambiguous')}'
@@ -244,7 +255,7 @@ class CodeMapManager:
                     href='{sublime.command_url('goto_view_region_neo_code_map', {'view_id': view.id(), 'region_a': symbol.region.a})}'
                     title='{view.rowcol(symbol.region.a)}'
                 >{symbol.name}</a>
-            </p>
+            </div>
             """
         html += "</body>"
 

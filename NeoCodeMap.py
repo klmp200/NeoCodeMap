@@ -1,4 +1,4 @@
-from typing import Union, List, Optional
+from typing import Union, List, Optional, Dict
 import sublime
 import sublime_plugin
 
@@ -16,6 +16,17 @@ def plugin_unloaded():
 
 class CodeMapManager:
     _html_sheets: List[int] = []
+
+    KIND_CLASS_NAMES: Dict[int, str] = {
+        sublime.KindId.KEYWORD: 'kind kind_keyword',
+        sublime.KindId.TYPE: 'kind kind_type',
+        sublime.KindId.FUNCTION: 'kind kind_function',
+        sublime.KindId.NAMESPACE: 'kind kind_namespace',
+        sublime.KindId.NAVIGATION: 'kind kind_navigation',
+        sublime.KindId.MARKUP: 'kind kind_markup',
+        sublime.KindId.VARIABLE: 'kind kind_variable',
+        sublime.KindId.SNIPPET: 'kind kind_snippet',
+    }
 
     @staticmethod
     def tab_name() -> str:
@@ -40,6 +51,14 @@ class CodeMapManager:
         return sheet == sublime.active_window().active_sheet_in_group(
             sublime.active_window().get_sheet_index(sheet)[0]
         )
+
+    @classmethod
+    def update_sheet(cls, sheet: Optional[sublime.HtmlSheet] = None) -> bool:
+        if not sheet:
+            sheet = cls.get_sheet()
+        if not sheet:
+            return False
+        sheet.set_contents(cls.get_html())
 
     @classmethod
     def show(cls) -> bool:
@@ -128,12 +147,72 @@ class CodeMapManager:
         if not view:
             return ""
 
-        html = "<body>"
-        for symbol in view.get_symbols():
-            region, sym = symbol
-            html += f"<p>{sym}: {str(region)}</p>"
+        html = """
+        <style>
+        html {
+                padding: 0;
+        }
+         .kind {
+                font-weight: bold;
+                font-style: italic;
+                width: 1.5rem;
+                display: inline-block;
+                text-align: center;
+                font-family: system;
+                line-height: 1.3;
+                border-radius: 2px;
+                position: relative;
+                top: 1px;
+                margin-left: 6px;
+                margin-right: 6px;
+            }
+            .kind_ambiguous {
+                display: none;
+            }
+            .kind_keyword {
+                background-color: color(var(--pinkish) a(0.2));
+                color: var(--pinkish);
+            }
+            .kind_type {
+                background-color: color(var(--purplish) a(0.2));
+                color: var(--purplish);
+            }
+            .kind_function {
+                background-color: color(var(--redish) a(0.2));
+                color: var(--redish);
+            }
+            .kind_namespace {
+                background-color: color(var(--bluish) a(0.2));
+                color: var(--bluish);
+            }
+            .kind_navigation {
+                background-color: color(var(--yellowish) a(0.2));
+                color: var(--yellowish);
+            }
+            .kind_markup {
+                background-color: color(var(--orangish) a(0.2));
+                color: var(--orangish);
+            }
+            .kind_variable {
+                background-color: color(var(--cyanish) a(0.2));
+                color: var(--cyanish);
+            }
+            .kind_snippet {
+                background-color: color(var(--greenish) a(0.2));
+                color: var(--greenish);
+            }
+        </style>
+        <body>
+        """
+        for symbol in view.symbol_regions():
+            kind_id, short_type, long_type = symbol.kind
+            html += f"""
+            <p>
+                <i class='{cls.KIND_CLASS_NAMES.get(kind_id, 'kind kind_ambiguous')}' title='{long_type}'>{short_type}</i>
+                <a href='{sublime.command_url('goto_view_region_neo_code_map', {'view_id': view.id(), 'region_a': symbol.region.a, 'region_b': symbol.region.b})}'>{symbol.name}</a>
+            </p>
+            """
         html += "</body>"
-        print(html)
 
         return html
 
@@ -142,7 +221,18 @@ class ToggleNeoCodeMap(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit):
         CodeMapManager.toggle()
 
+class GotoViewRegionNeoCodeMap(sublime_plugin.ApplicationCommand):
+    def run(self, view_id: int, region_a: int, region_b: int):
+        view = sublime.View(view_id)
+        region = sublime.Region(region_a, region_b)
+        view.sel().clear()
+        view.sel().add(region)
+        view.show_at_center(region, animate=True)
+        sublime.active_window().focus_view(view)
+
+
 
 class SheetListener(sublime_plugin.EventListener):
-    def on_modified(self, view):
-        pass
+    def on_modified_async(self, view: sublime.View):
+        CodeMapManager.update_sheet()
+

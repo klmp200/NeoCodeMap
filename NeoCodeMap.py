@@ -18,7 +18,6 @@ def plugin_loaded():
 def plugin_unloaded():
     map_manager.clear() 
 
-
 class CodeMapManager:
     KIND_CLASS_NAMES: Dict[int, str] = {
         sublime.KindId.KEYWORD: 'kind kind_keyword',
@@ -204,6 +203,66 @@ class CodeMapManager:
             return self.hide(window=window)
         return self.show(window)
 
+    def get_selected_lines(self, view: Optional[sublime.View] = None) -> List[int]:
+        """Get all selected lines on a provided view. Use the current active view if unspecified"""
+        if not view:
+            view = sublime.active_window().active_view()
+
+        if not view:
+            return []
+
+        return [view.rowcol(region.a)[0] for region in view.sel()]
+
+    def _is_symbol_active(self, view: sublime.View, selected_lines: List[int], symbol: sublime.SymbolRegion, next_symbol: Optional[sublime.SymbolRegion]) -> bool:
+        """Test if the provided symbol is active in the provided view
+        view: view to test the symbol on
+        selected_lines: list of line numbers that are currently selected by the user on that view
+        symbol: symbol region to test
+        next_symbol: next symbol region in the document. Used to test symbol boundaries. Leave to None if you're testing the last symbol in the view"""
+
+        current_line = view.rowcol(symbol.region.a)[0]
+        next_line = view.rowcol(next_symbol.region.a)[0] if next_symbol else len(view.lines(sublime.Region(0, view.size())))
+
+        for line in selected_lines:
+            if line >= current_line and line < next_line:
+                return True
+
+        return False
+
+    def _get_around_active_symbol(self, default_index: int, offset: int, view: Optional[sublime.View] = None) -> Optional[sublime.SymbolRegion]:
+        """Get a symbol around the active one on the specified view
+        default_index: index of the list to get if the symbol list isn't empty but no active symbol exists
+        offset: symbol offset to get in the list around the active symbol
+        view: view to search symbols on. Get the current active list if unspecified"""
+
+        if not view:
+            view = sublime.active_window().active_view()
+
+        if not view:
+            return None
+
+        symbol_regions = view.symbol_regions()
+        selected_lines = self.get_selected_lines(view)
+
+        if len(symbol_regions) == 0:
+            return None
+
+        for i, symbol in enumerate(symbol_regions):
+            next_symbol = symbol_regions[i+1] if i+1 < len(symbol_regions) else None
+            if self._is_symbol_active(view, selected_lines, symbol, next_symbol):
+                return symbol_regions[(i + offset) % len(symbol_regions)]
+
+        # If no symbol is active in the view, we get the default index
+        return symbol_regions[default_index]
+
+    def get_next_symbol(self, view: Optional[sublime.View] = None) -> Optional[sublime.SymbolRegion]:
+        """Get the next symbol region on the provided view. Use the current active view if unspecified"""
+        return self._get_around_active_symbol(0, 1, view)
+
+    def get_previous_symbol(self, view: Optional[sublime.View] = None) -> Optional[sublime.SymbolRegion]:
+        """Get the previous symbol region on the provided view. Use the current active view if unspecified"""
+        return self._get_around_active_symbol(-1, -1, view)
+
     def get_html(self, view: Optional[sublime.View] = None) -> str:
         """Build the HTML content for a sheet based on the content of the specified view.
         Get the current active view from the current active window if unspecified"""
@@ -217,16 +276,6 @@ class CodeMapManager:
 
         html = f"<body><style>{css}</style>"
         selected_lines = [view.rowcol(region.a)[0] for region in view.sel()]
-
-        def is_active(symbol: sublime.SymbolRegion, next_symbol: Optional[sublime.SymbolRegion]) -> bool:
-            current_line = view.rowcol(symbol.region.a)[0]
-            next_line = view.rowcol(next_symbol.region.a)[0] if next_symbol else len(view.lines(sublime.Region(0, view.size())))
-
-            for line in selected_lines:
-                if line >= current_line and line < next_line:
-                    return True
-
-            return False
 
         def indent_css(symbol: sublime.SymbolRegion) -> str:
             if not settings.get("neocodemap_enable_indent"):
@@ -244,7 +293,7 @@ class CodeMapManager:
 
             html += f"""
             <div
-                class='item {'active' if is_active(symbol, next_symbol) else ''}'
+                class='item {'active' if self._is_symbol_active(view, selected_lines, symbol, next_symbol) else ''}'
                 style='{indent_css(symbol)}'
             >
                 <i
@@ -277,6 +326,29 @@ class NeoCodeMapCloseAllCommand(sublime_plugin.ApplicationCommand):
 
     def run(self):
         map_manager.clear()
+
+class NeoCodeMapMoveCommand(sublime_plugin.WindowCommand):
+    """Move up or down symbols on the code map"""
+    def name(self) -> str:
+        return "neo_code_map_move"
+
+    def run(self, direction: Union[Literal["up"], Literal["down"]]):
+        view = self.window.active_view()
+
+        if not view:
+            return
+
+        symbol = map_manager.get_next_symbol(view) if direction == "down" else map_manager.get_previous_symbol(view)
+
+        if not symbol:
+            return
+
+        view.sel().clear()
+        view.sel().add(symbol.region.a)
+        view.show_at_center(symbol.region, animate=True)
+        sublime.active_window().focus_view(view)
+        map_manager.update_sheet()
+
 
 class NeoCodeMapGotoViewRegionCommand(sublime_plugin.ApplicationCommand):
     """Unexposed: used as a callback when clicking on html links in the code map"""

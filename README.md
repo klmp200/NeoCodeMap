@@ -14,6 +14,8 @@ Press `cmd+shift+p`. Type `neocodemap` to see the available commands:
 
 * **Toggle**: Toggle the code map view
 * **Close All**: Close all code maps on all windows
+* **Move Up**: Move to the next symbol on the current view
+* **Move Down**: Move to the previous symbol on the current view
 * **Preferences**: Edit preferences (see below)
 
 # Preferences

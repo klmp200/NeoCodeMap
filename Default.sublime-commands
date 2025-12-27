@@ -23,5 +23,21 @@
     {
         "caption": "NeoCodeMap: Close All",
         "command": "neo_code_map_close_all"
+    },
+    {
+        "caption": "NeoCodeMap: Move Down",
+        "command": "neo_code_map_move",
+        "args":
+        {
+            "direction": "down"
+        }
+    },
+    {
+        "caption": "NeoCodeMap: Move Up",
+        "command": "neo_code_map_move",
+        "args":
+        {
+            "direction": "up"
+        }
     }
 ]

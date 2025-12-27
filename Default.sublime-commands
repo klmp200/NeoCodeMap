@@ -18,10 +18,10 @@
     },
     {
     	"caption": "NeoCodeMap: Toggle",
-    	"command": "toggle_neo_code_map"
+    	"command": "neo_code_map_toggle"
     },
     {
         "caption": "NeoCodeMap: Close All",
-        "command": "close_all_neo_code_map"
+        "command": "neo_code_map_close_all"
     }
 ]

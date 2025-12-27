@@ -252,7 +252,7 @@ class CodeMapManager:
                     title='{long_type}'
                 >{short_type}</i>
                 <a
-                    href='{sublime.command_url('goto_view_region_neo_code_map', {'view_id': view.id(), 'region_a': symbol.region.a})}'
+                    href='{sublime.command_url('neo_code_map_goto_view_region', {'view_id': view.id(), 'region_a': symbol.region.a})}'
                     title='{view.rowcol(symbol.region.a)}'
                 >{symbol.name}</a>
             </div>
@@ -262,18 +262,27 @@ class CodeMapManager:
         return html
 
 
-class ToggleNeoCodeMap(sublime_plugin.WindowCommand):
+class NeoCodeMapToggleCommand(sublime_plugin.WindowCommand):
     """Toggle the code map"""
+    def name(self) -> str:
+        return "neo_code_map_toggle"
+
     def run(self):
         map_manager.toggle(self.window)
 
-class CloseAllNeoCodeMap(sublime_plugin.ApplicationCommand):
+class NeoCodeMapCloseAllCommand(sublime_plugin.ApplicationCommand):
     """Close all code maps from all windows"""
+    def name(self) -> str:
+        return "neo_code_map_close_all"
+
     def run(self):
         map_manager.clear()
 
-class GotoViewRegionNeoCodeMap(sublime_plugin.ApplicationCommand):
+class NeoCodeMapGotoViewRegionCommand(sublime_plugin.ApplicationCommand):
     """Unexposed: used as a callback when clicking on html links in the code map"""
+    def name(self) -> str:
+        return "neo_code_map_goto_view_region"
+
     def run(self, view_id: int, region_a: int):
         view = sublime.View(view_id)
         region = sublime.Region(region_a)

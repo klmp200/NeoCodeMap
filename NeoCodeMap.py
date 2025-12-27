@@ -301,8 +301,8 @@ class CodeMapManager:
                     title='{long_type}'
                 >{short_type}</i>
                 <a
-                    href='{sublime.command_url('neo_code_map_goto_view_region', {'view_id': view.id(), 'region_a': symbol.region.a})}'
-                    title='{view.rowcol(symbol.region.a)}'
+                    href='{sublime.command_url('neo_code_map_goto_view_region', {'view_id': view.id(), 'region_begin': symbol.region.a})}'
+                    title='{view.rowcol(symbol.region.begin())}'
                 >{symbol.name}</a>
             </div>
             """
@@ -310,6 +310,23 @@ class CodeMapManager:
 
         return html
 
+    def move_to_region(self, view: sublime.View, region: sublime.Region):
+        """Move the cursor to a specified region on the specified view"""
+        if (window := view.window()):
+            window.focus_view(view)
+
+
+        # Avoid selection bug when moving after jump
+        view.sel().clear()
+
+        # Needed to avoid selection bug and properly trigger the history
+        # This also fires the correct event for the html redraw
+        # +1 is needed because rowcol is 0 based but goto_line is 1 based
+        view.run_command("goto_line", {"line": view.rowcol(region.begin())[0] + 1})
+
+        # Move the cursor to the beginning of the symbol
+        view.sel().clear()
+        view.sel().add(region.begin())
 
 class NeoCodeMapToggleCommand(sublime_plugin.WindowCommand):
     """Toggle the code map"""
@@ -343,11 +360,7 @@ class NeoCodeMapMoveCommand(sublime_plugin.WindowCommand):
         if not symbol:
             return
 
-        view.sel().clear()
-        view.sel().add(symbol.region.a)
-        view.show_at_center(symbol.region, animate=True)
-        sublime.active_window().focus_view(view)
-        map_manager.update_sheet()
+        map_manager.move_to_region(view, symbol.region)
 
 
 class NeoCodeMapGotoViewRegionCommand(sublime_plugin.ApplicationCommand):
@@ -355,13 +368,10 @@ class NeoCodeMapGotoViewRegionCommand(sublime_plugin.ApplicationCommand):
     def name(self) -> str:
         return "neo_code_map_goto_view_region"
 
-    def run(self, view_id: int, region_a: int):
+    def run(self, view_id: int, region_begin: int):
         view = sublime.View(view_id)
-        region = sublime.Region(region_a)
-        view.sel().clear()
-        view.sel().add(region)
-        view.show_at_center(region, animate=True)
-        sublime.active_window().focus_view(view)
+        region = sublime.Region(region_begin)
+        map_manager.move_to_region(view, region)
 
 class NavigationListener(sublime_plugin.EventListener):
     """Synchronize codemap with user activity"""

@@ -2,7 +2,7 @@
 
 This plugin is inspired by [sublime-codemap](https://github.com/oleg-shilo/sublime-codemap/tree/master) but using Sublime Text 4 capabilities.
 
-It displays on the side of the editor.
+It displays on the side of the editor. You can jump to symbol definition and references to it.
 
 It supports all languages through native Sublime indexing.
 

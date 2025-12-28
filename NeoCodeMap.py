@@ -304,6 +304,7 @@ class CodeMapManager:
                     href='{sublime.command_url('neo_code_map_goto_view_region', {'view_id': view.id(), 'region_begin': symbol.region.a})}'
                     title='{view.rowcol(symbol.region.begin())}'
                 >{symbol.name}</a>
+                <a href='{sublime.command_url('neo_code_map_goto_reference', {'view_id': view.id(), 'symbol': symbol.name})}'>⧉</a>
             </div>
             """
         html += "</body>"
@@ -372,6 +373,22 @@ class NeoCodeMapGotoViewRegionCommand(sublime_plugin.ApplicationCommand):
         view = sublime.View(view_id)
         region = sublime.Region(region_begin)
         map_manager.move_to_region(view, region)
+
+class NoCodeMapGotoReferenceCommand(sublime_plugin.ApplicationCommand):
+    """Unexposed: goto reference of a symbol on the current active view"""
+
+    def name(self) -> str:
+        return "neo_code_map_goto_reference"
+
+    def run(self, view_id: int, symbol: str):
+        view = sublime.View(view_id)
+        window = view.window()
+
+        if not window:
+            return
+
+        window.focus_view(view)
+        window.run_command("goto_reference", {"symbol": symbol})
 
 class NavigationListener(sublime_plugin.EventListener):
     """Synchronize codemap with user activity"""

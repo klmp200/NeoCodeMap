@@ -8,6 +8,18 @@ It supports all languages through native Sublime indexing.
 
 ![preview](preview.png)
 
+# Installation
+
+This plugins has only been tested on Sublime Text >= 4200.
+
+## Package Control
+
+Ongoing
+
+## Manual install
+
+Clean repository in your `Packages` directory.
+
 # Command Palette
 
 Press `cmd+shift+p`. Type `neocodemap` to see the available commands:

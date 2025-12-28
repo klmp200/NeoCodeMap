@@ -22,7 +22,6 @@ Press `cmd+shift+p`. Type `neocodemap` to see the available commands:
 
 You can configure the plugin to use:
 
-* A custom name for the code map tab
 * The default width of the code map
 * The position of the code map (right or left)
 * Indentation of methods

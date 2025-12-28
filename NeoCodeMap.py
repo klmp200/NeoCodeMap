@@ -14,11 +14,43 @@ def plugin_loaded():
     settings = sublime.load_settings("NeoCodeMap.sublime-settings")
     css = sublime.load_resource("Packages/NeoCodeMap/NeoCodeMap.css")
 
-
 def plugin_unloaded():
     map_manager.clear() 
 
+class SheetManager:
+    def __init__(self):
+        self._sheets: Dict[sublime.Window, sublime.HtmlSheet] = {}
+
+    def create(self, window: sublime.Window, content: str) -> sublime.HtmlSheet:
+        """Create a new html sheet in a provided window"""
+        self._sheets[window] = window.new_html_sheet(
+            "", content, flags=sublime.NewFileFlags.TRANSIENT
+        )
+        return self._sheets[window]
+
+    def get(self, window: Optional[sublime.Window] = None) -> Optional[sublime.HtmlSheet]:
+        """Get a sheet from a specified window. Get from active window if unspecified"""
+        if not window:
+            window = sublime.active_window()
+
+        sheet = self._sheets.get(window)
+
+        # Test if the sheet has been destroyed
+        if sheet and not sheet.group():
+            del self._sheets[window]
+            return None
+
+        return sheet
+
+    def remove(self, window: sublime.Window):
+        """Remove a sheet from a specific window"""
+        if sheet := self.get(window):
+            del self._sheets[window]
+
+
 class CodeMapManager:
+    """Main logic of the code map"""
+
     KIND_CLASS_NAMES: Dict[int, str] = {
         sublime.KindId.KEYWORD: 'kind kind_keyword',
         sublime.KindId.TYPE: 'kind kind_type',
@@ -31,12 +63,7 @@ class CodeMapManager:
     }
 
     def __init__(self):
-        self._html_sheets: List[int] = []
-
-    @property
-    def tab_name(self) -> str:
-        """Tab name to display on sheet"""
-        return str(settings.get("neocodemap_tab_name"))
+        self._sheets = SheetManager()
 
     @property
     def layout_position(self) -> Union[Literal["left"], Literal["right"]]:
@@ -53,46 +80,13 @@ class CodeMapManager:
 
     def clear(self):
         """Delete all html sheets on all windows"""
-        for sheet_id in self._html_sheets:
-            for window in sublime.windows():
-                sheet = self.get_sheet(window)
-                if sheet:
-                    self.hide(sheet, window)
-        self._html_sheets = []
-
-    def is_code_map(self, sheet: Union[sublime.Sheet, sublime.HtmlSheet]) -> bool:
-        """Test if sheet is managed by this plugin"""
-        return isinstance(sheet, sublime.HtmlSheet) and sheet.id() in self._html_sheets
-
-    def get_sheet(self, window: Optional[sublime.Window] = None) -> Optional[sublime.HtmlSheet]:
-        """Get a sheet from a specified window. Get from active window if unspecified"""
-        if not window:
-            window = sublime.active_window()
-
-        for sheet in window.sheets():
-            if self.is_code_map(sheet):
-                return sheet
-        return None
-
-    def is_visible(self, sheet: Optional[sublime.HtmlSheet] = None, window: Optional[sublime.Window] = None) -> bool:
-        """Return True if the specified sheet on the specified window is the selected tab
-        If no window is specified, the active window is used
-        If no sheet is specified, it will be fetched from the provided (or not) window"""
-
-        if not window:
-            window = sublime.active_window()
-        if not sheet:
-            sheet = self.get_sheet(window)
-        if not sheet:
-            return False
-        return sheet == window.active_sheet_in_group(
-            sublime.active_window().get_sheet_index(sheet)[0]
-        )
+        for window in sublime.windows():
+            self.hide(self._sheets.get(window), window)
 
     def update_sheet(self, sheet: Optional[sublime.HtmlSheet] = None) -> bool:
         """Update the html content of a provided sheet"""
         if not sheet:
-            sheet = self.get_sheet()
+            sheet = self._sheets.get()
         if not sheet:
             return False
         sheet.set_contents(self.get_html())
@@ -133,24 +127,16 @@ class CodeMapManager:
         if not window:
             window = sublime.active_window()
 
-        if self.is_visible(window=window):
-            return False
-
         original_view = window.active_view()
 
         # Cleanup previous group
-        if self.get_sheet():
-            self.hide()
-
+        self.hide(self._sheets.get(window), window)
 
         group = self.create_layout(window)
 
         # Create new sheet
-        sheet = window.new_html_sheet(
-            self.tab_name, self.get_html(original_view)
-        )
-        self._html_sheets.append(sheet.id())
-        window.move_sheets_to_group([sheet], group, select=False)
+        sheet = self._sheets.create(window, self.get_html(original_view))
+        window.move_sheets_to_group([sheet], group)
 
         # Restore original focus
         if original_view:
@@ -163,14 +149,14 @@ class CodeMapManager:
         Get the sheet from the specified window if unspecified.
         Get the active window if unspecified"""
 
+        if not window:
+            window = sublime.active_window()
+
         if not sheet:
-            sheet = self.get_sheet()
+            sheet = self._sheets.get(window)
 
         if not sheet:
             return False
-
-        if not window:
-            window = sublime.active_window()
 
         original_view = window.active_view()
 
@@ -187,7 +173,7 @@ class CodeMapManager:
             window.run_command("close_pane", {"group": group})
 
         # Cleanup
-        self._html_sheets.remove(sheet.id())
+        self._sheets.remove(window)
 
         # Restore original focus
         if original_view:
@@ -199,7 +185,7 @@ class CodeMapManager:
         """Toggle the display of the sheet from the specified window.
         Get the active window if unspecified"""
 
-        if self.is_visible(window=window):
+        if self._sheets.get(window):
             return self.hide(window=window)
         return self.show(window)
 

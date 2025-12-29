@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0 - 2025-12-29
+
+- Restores code map across app reboot and closed windows and reloaded plugin
+
 ## 1.1.0 - 2025-12-29
 
 - Add `neo_code_map_move` command to navigate symbols

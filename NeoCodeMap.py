@@ -1,5 +1,8 @@
 from __future__ import annotations
-from typing import Union, List, Optional, Dict, Literal
+from json.decoder import JSONDecodeError
+import json
+from pathlib import Path
+from typing import Union, List, Optional, Dict, Literal, Any
 import sublime
 import sublime_plugin
 
@@ -14,8 +17,8 @@ def plugin_loaded():
     settings = sublime.load_settings("NeoCodeMap.sublime-settings")
     css = sublime.load_resource("Packages/NeoCodeMap/NeoCodeMap.css")
 
-def plugin_unloaded():
-    map_manager.clear() 
+    for window in sublime.windows():
+        map_manager.restore_sheet(window)
 
 class SheetManager:
     def __init__(self):
@@ -44,12 +47,14 @@ class SheetManager:
 
     def remove(self, window: sublime.Window):
         """Remove a sheet from a specific window"""
-        if sheet := self.get(window):
+        if self.get(window):
             del self._sheets[window]
 
 
 class CodeMapManager:
     """Main logic of the code map"""
+
+    SETTINGS_GROUP_KEY = "neo_code_map_group"
 
     KIND_CLASS_NAMES: Dict[int, str] = {
         sublime.KindId.KEYWORD: 'kind kind_keyword',
@@ -64,6 +69,28 @@ class CodeMapManager:
 
     def __init__(self):
         self._sheets = SheetManager()
+
+    def restore_sheet(self, window: sublime.Window):
+        """Restore code map sheet on a given window if it exists"""
+        try:
+            group = int(window.settings().get(self.SETTINGS_GROUP_KEY))
+        except (ValueError, TypeError):
+            return
+
+        # Check that the group still exists
+        if group >= window.num_groups():
+            return
+
+        # Check that the group is empty
+        if window.sheets_in_group(group) or window.views_in_group(group):
+            return
+
+        # For some reason, showing the sheet promotes it when restoring
+        # The workaround is to restore the sheet, remove it and then show it again
+        # This is why I show it twice here. One low level show and one high level
+        self._show(window, group, window.active_view(), window)
+        self.show(window)
+
 
     @property
     def layout_position(self) -> Union[Literal["left"], Literal["right"]]:
@@ -122,25 +149,42 @@ class CodeMapManager:
         window.run_command("set_layout", layout)
         return window.num_groups()
 
+    def _show(self,
+            window: sublime.Window,
+            group: int,
+            rendered_view: Optional[sublime.View] = None,
+            active_window: Optional[sublime.Window] = None,
+        ) -> sublime.HtmlSheet:
+        """Low level function that does the showing logic on a group"""
+
+        # Create new sheet
+        sheet = self._sheets.create(window, self.get_html(rendered_view))
+        window.move_sheets_to_group([sheet], group)
+
+        # Restore original focus
+        if active_window and rendered_view:
+            active_window.focus_view(rendered_view)
+
+        return sheet
+
+
     def show(self, window: Optional[sublime.Window] = None) -> bool:
         """Show the html sheet on the specified window. Use the active window if unspecified"""
         if not window:
             window = sublime.active_window()
 
-        original_view = window.active_view()
+        if not window:
+            return False
+
+        active_view = window.active_view()
+        if not active_view:
+            return False
 
         # Cleanup previous group
         self.hide(self._sheets.get(window), window)
 
-        group = self.create_layout(window)
-
-        # Create new sheet
-        sheet = self._sheets.create(window, self.get_html(original_view))
-        window.move_sheets_to_group([sheet], group)
-
-        # Restore original focus
-        if original_view:
-            window.focus_view(original_view)
+        sheet = self._show(window, self.create_layout(window), active_view, window)
+        window.settings().set(self.SETTINGS_GROUP_KEY, sheet.group())
 
         return True
 
@@ -174,6 +218,7 @@ class CodeMapManager:
 
         # Cleanup
         self._sheets.remove(window)
+        window.settings().erase(self.SETTINGS_GROUP_KEY)
 
         # Restore original focus
         if original_view:
@@ -383,3 +428,6 @@ class NavigationListener(sublime_plugin.EventListener):
 
     def on_activated(self, view: sublime.View):
         map_manager.update_sheet()
+
+    def on_new_window_async(self, window: sublime.Window):
+        map_manager.restore_sheet(window)

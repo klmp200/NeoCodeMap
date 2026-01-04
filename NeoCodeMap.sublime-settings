@@ -1,15 +1,16 @@
 {
-	// Set the width of the codemap column
+	// Set the default width of the codemap column
+	// The value is a percentage of the layout
+	// It should be compride between 0 and 1 where 1 is 100%
 	"neocodemap_width": 0.20,
 
-	// Behavior of the auto layout
+	// Position of the codemap
 	//   - auto: opposite position of the sidebar
 	//   - left: on left
 	//   - right: on right
 	"neocodemap_position": "auto",
 
-	// Enable indentation of methods in classes
-	// This can sometimes be unreliable or using
-	// too much width for your liking
-	"neocodemap_enable_indent": true
+	// Choose the maximum indentation level to display
+	// Using a negative value disables the limit
+	"neocodemap_max_indent": -1,
 }

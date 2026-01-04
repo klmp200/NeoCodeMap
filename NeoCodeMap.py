@@ -20,6 +20,12 @@ def plugin_loaded():
     for window in sublime.windows():
         map_manager.restore_sheet(window)
 
+    settings.add_on_change("update_sheets", map_manager.refresh_all)
+
+def plugin_unloaded():
+    if settings:
+        settings.clear_on_change("update_sheets")
+
 class SheetManager:
     def __init__(self):
         self._sheets: Dict[sublime.Window, sublime.HtmlSheet] = {}
@@ -70,6 +76,13 @@ class CodeMapManager:
     def __init__(self):
         self._sheets = SheetManager()
 
+    def refresh_all(self):
+        """Refresh all code maps on all windows"""
+        for window in sublime.windows():
+            sheet = self._sheets.get(window)
+            if sheet:
+                self.update_sheet(sheet)
+
     def restore_sheet(self, window: sublime.Window):
         """Restore code map sheet on a given window if it exists"""
         try:
@@ -116,7 +129,11 @@ class CodeMapManager:
             sheet = self._sheets.get()
         if not sheet:
             return False
-        sheet.set_contents(self.get_html())
+        window = sheet.window()
+        if not window:
+            return False
+
+        sheet.set_contents(self.get_html(window.active_view()))
         return True
 
     def create_layout(self, window: sublime.Window) -> int:
@@ -298,9 +315,8 @@ class CodeMapManager:
         """Build the HTML content for a sheet based on the content of the specified view.
         Get the current active view from the current active window if unspecified"""
 
-        window = sublime.active_window()
         if not view:
-            view = window.active_view()
+            view = sublime.active_window().active_view()
 
         if not view:
             return ""
@@ -309,13 +325,19 @@ class CodeMapManager:
         selected_lines = [view.rowcol(region.a)[0] for region in view.sel()]
 
         def indent_css(symbol: sublime.SymbolRegion) -> str:
-            if not settings.get("neocodemap_enable_indent"):
+            try:
+                max_indent = int(settings.get("neocodemap_max_indent", -1))
+            except (TypeError, ValueError):
+                max_indent = -1
+
+            indent = view.indentation_level(symbol.region.a)
+            if max_indent >= 0:
+                indent = min(max_indent, indent)
+
+            if indent == 0:
                 return ""
 
-            level = view.indentation_level(symbol.region.a)
-            if level == 0:
-                return ""
-            return f"margin-left: {0.5 + level * 1.6}rem;"
+            return f"margin-left: {0.5 + indent * 1.6}rem;"
             
         symbol_regions = view.symbol_regions()
         for i, symbol in enumerate(symbol_regions):

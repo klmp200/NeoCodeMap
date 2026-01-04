@@ -34,6 +34,8 @@ Press `cmd+shift+p`. Type `neocodemap` to see the available commands:
 
 You can configure the plugin to use:
 
-* The default width of the code map
-* The position of the code map (right or left)
-* Indentation of methods
+| Preference            | Description                                                                                                                                     | Default |
+|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| neocodemap_width      | Set the default width of the codemap column<br>The value is a percentage of the layout<br>It should be compride between 0 and 1 where 1 is 100% | 0.20    |
+| neocodemap_position   | Position of the codemap<br>   - auto: opposite position of the sidebar<br>   - left: on left<br>   - right: on right                            | auto    |
+| neocodemap_max_indent | Choose the maximum indentation level to display<br>Using a negative value disables the limit                                                    | -1      |

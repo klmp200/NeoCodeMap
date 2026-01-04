@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0 - 2026-01-04
+
+- Replace `neocodemap_enable_indent` with `neocodemap_max_indent`
+- Allow custom maximum indentation
+- Automatically apply changes from settings without a plugin reload
+- Improve documentation
+
 ## 1.2.0 - 2025-12-29
 
 - Restores code map across app reboot and closed windows and reloaded plugin

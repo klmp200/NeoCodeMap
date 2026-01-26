@@ -8,6 +8,48 @@ It supports all languages through native Sublime indexing.
 
 ![preview](preview.png)
 
+# Specific languages features
+
+## Generic
+
+Nesting level is guessed through indentation level.
+
+## Markdown
+
+The package supports markdown headings.
+
+## Make your own
+
+You can make your own `Indenter` and register it with `register_indenter`.
+
+This looks like this for a markdown indenter:
+
+```python
+import sublime
+from CodeMapManager import indenter
+
+def my_markdown_indenter(view: sublime.View, symbol: sublime.SymbolRegion) -> int:
+	# process stuff
+	return x
+
+indenter.register_indenter("text.html.markdown", my_markdown_indenter)
+```
+
+The last registered indenter takes priority.
+
+You can even override the default indenter by overriding `None`.
+
+```python
+import sublime
+from CodeMapManager import indenter
+
+def my_default_indenter(view: sublime.View, symbol: sublime.SymbolRegion) -> int:
+	# process stuff
+	return x
+
+indenter.register_indenter(None, my_default_indenter)
+```
+
 # Installation
 
 This plugins has only been tested on Sublime Text >= 4200.

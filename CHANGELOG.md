@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0 - 2026-01-26
+
+- Add support for different `Indenter`
+- Add default `Indenter`
+- Add markdown `Indenter`
+
 ## 1.3.0 - 2026-01-04
 
 - Replace `neocodemap_enable_indent` with `neocodemap_max_indent`

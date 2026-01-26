@@ -1,8 +1,6 @@
 from __future__ import annotations
-from json.decoder import JSONDecodeError
-import json
-from pathlib import Path
-from typing import Union, List, Optional, Dict, Literal, Any
+from typing import Union, List, Optional, Dict, Literal
+from . import indenter
 import sublime
 import sublime_plugin
 
@@ -16,15 +14,18 @@ def plugin_loaded():
     map_manager = CodeMapManager()
     settings = sublime.load_settings("NeoCodeMap.sublime-settings")
     css = sublime.load_resource("Packages/NeoCodeMap/NeoCodeMap.css")
+    # reload(indenter)
 
     for window in sublime.windows():
         map_manager.restore_sheet(window)
 
     settings.add_on_change("update_sheets", map_manager.refresh_all)
 
+
 def plugin_unloaded():
     if settings:
         settings.clear_on_change("update_sheets")
+
 
 class SheetManager:
     def __init__(self):
@@ -37,7 +38,9 @@ class SheetManager:
         )
         return self._sheets[window]
 
-    def get(self, window: Optional[sublime.Window] = None) -> Optional[sublime.HtmlSheet]:
+    def get(
+        self, window: Optional[sublime.Window] = None
+    ) -> Optional[sublime.HtmlSheet]:
         """Get a sheet from a specified window. Get from active window if unspecified"""
         if not window:
             window = sublime.active_window()
@@ -63,14 +66,14 @@ class CodeMapManager:
     SETTINGS_GROUP_KEY = "neo_code_map_group"
 
     KIND_CLASS_NAMES: Dict[int, str] = {
-        sublime.KindId.KEYWORD: 'kind kind_keyword',
-        sublime.KindId.TYPE: 'kind kind_type',
-        sublime.KindId.FUNCTION: 'kind kind_function',
-        sublime.KindId.NAMESPACE: 'kind kind_namespace',
-        sublime.KindId.NAVIGATION: 'kind kind_navigation',
-        sublime.KindId.MARKUP: 'kind kind_markup',
-        sublime.KindId.VARIABLE: 'kind kind_variable',
-        sublime.KindId.SNIPPET: 'kind kind_snippet',
+        sublime.KindId.KEYWORD: "kind kind_keyword",
+        sublime.KindId.TYPE: "kind kind_type",
+        sublime.KindId.FUNCTION: "kind kind_function",
+        sublime.KindId.NAMESPACE: "kind kind_namespace",
+        sublime.KindId.NAVIGATION: "kind kind_navigation",
+        sublime.KindId.MARKUP: "kind kind_markup",
+        sublime.KindId.VARIABLE: "kind kind_variable",
+        sublime.KindId.SNIPPET: "kind kind_snippet",
     }
 
     def __init__(self):
@@ -103,7 +106,6 @@ class CodeMapManager:
         # This is why I show it twice here. One low level show and one high level
         self._show(window, group, window.active_view(), window)
         self.show(window)
-
 
     @property
     def layout_position(self) -> Union[Literal["left"], Literal["right"]]:
@@ -166,12 +168,13 @@ class CodeMapManager:
         window.run_command("set_layout", layout)
         return window.num_groups()
 
-    def _show(self,
-            window: sublime.Window,
-            group: int,
-            rendered_view: Optional[sublime.View] = None,
-            active_window: Optional[sublime.Window] = None,
-        ) -> sublime.HtmlSheet:
+    def _show(
+        self,
+        window: sublime.Window,
+        group: int,
+        rendered_view: Optional[sublime.View] = None,
+        active_window: Optional[sublime.Window] = None,
+    ) -> sublime.HtmlSheet:
         """Low level function that does the showing logic on a group"""
 
         # Create new sheet
@@ -183,7 +186,6 @@ class CodeMapManager:
             active_window.focus_view(rendered_view)
 
         return sheet
-
 
     def show(self, window: Optional[sublime.Window] = None) -> bool:
         """Show the html sheet on the specified window. Use the active window if unspecified"""
@@ -205,7 +207,11 @@ class CodeMapManager:
 
         return True
 
-    def hide(self, sheet: Optional[sublime.HtmlSheet] = None, window: Optional[sublime.Window] = None) -> bool:
+    def hide(
+        self,
+        sheet: Optional[sublime.HtmlSheet] = None,
+        window: Optional[sublime.Window] = None,
+    ) -> bool:
         """Hide the specified sheet on the specified window.
         Get the sheet from the specified window if unspecified.
         Get the active window if unspecified"""
@@ -261,7 +267,13 @@ class CodeMapManager:
 
         return [view.rowcol(region.a)[0] for region in view.sel()]
 
-    def _is_symbol_active(self, view: sublime.View, selected_lines: List[int], symbol: sublime.SymbolRegion, next_symbol: Optional[sublime.SymbolRegion]) -> bool:
+    def _is_symbol_active(
+        self,
+        view: sublime.View,
+        selected_lines: List[int],
+        symbol: sublime.SymbolRegion,
+        next_symbol: Optional[sublime.SymbolRegion],
+    ) -> bool:
         """Test if the provided symbol is active in the provided view
         view: view to test the symbol on
         selected_lines: list of line numbers that are currently selected by the user on that view
@@ -269,7 +281,11 @@ class CodeMapManager:
         next_symbol: next symbol region in the document. Used to test symbol boundaries. Leave to None if you're testing the last symbol in the view"""
 
         current_line = view.rowcol(symbol.region.a)[0]
-        next_line = view.rowcol(next_symbol.region.a)[0] if next_symbol else len(view.lines(sublime.Region(0, view.size())))
+        next_line = (
+            view.rowcol(next_symbol.region.a)[0]
+            if next_symbol
+            else len(view.lines(sublime.Region(0, view.size())))
+        )
 
         for line in selected_lines:
             if line >= current_line and line < next_line:
@@ -277,7 +293,9 @@ class CodeMapManager:
 
         return False
 
-    def _get_around_active_symbol(self, default_index: int, offset: int, view: Optional[sublime.View] = None) -> Optional[sublime.SymbolRegion]:
+    def _get_around_active_symbol(
+        self, default_index: int, offset: int, view: Optional[sublime.View] = None
+    ) -> Optional[sublime.SymbolRegion]:
         """Get a symbol around the active one on the specified view
         default_index: index of the list to get if the symbol list isn't empty but no active symbol exists
         offset: symbol offset to get in the list around the active symbol
@@ -296,18 +314,22 @@ class CodeMapManager:
             return None
 
         for i, symbol in enumerate(symbol_regions):
-            next_symbol = symbol_regions[i+1] if i+1 < len(symbol_regions) else None
+            next_symbol = symbol_regions[i + 1] if i + 1 < len(symbol_regions) else None
             if self._is_symbol_active(view, selected_lines, symbol, next_symbol):
                 return symbol_regions[(i + offset) % len(symbol_regions)]
 
         # If no symbol is active in the view, we get the default index
         return symbol_regions[default_index]
 
-    def get_next_symbol(self, view: Optional[sublime.View] = None) -> Optional[sublime.SymbolRegion]:
+    def get_next_symbol(
+        self, view: Optional[sublime.View] = None
+    ) -> Optional[sublime.SymbolRegion]:
         """Get the next symbol region on the provided view. Use the current active view if unspecified"""
         return self._get_around_active_symbol(0, 1, view)
 
-    def get_previous_symbol(self, view: Optional[sublime.View] = None) -> Optional[sublime.SymbolRegion]:
+    def get_previous_symbol(
+        self, view: Optional[sublime.View] = None
+    ) -> Optional[sublime.SymbolRegion]:
         """Get the previous symbol region on the provided view. Use the current active view if unspecified"""
         return self._get_around_active_symbol(-1, -1, view)
 
@@ -330,7 +352,7 @@ class CodeMapManager:
             except (TypeError, ValueError):
                 max_indent = -1
 
-            indent = view.indentation_level(symbol.region.a)
+            indent = indenter.get_indent(view, symbol)
             if max_indent >= 0:
                 indent = min(max_indent, indent)
 
@@ -338,26 +360,26 @@ class CodeMapManager:
                 return ""
 
             return f"margin-left: {0.5 + indent * 1.6}rem;"
-            
+
         symbol_regions = view.symbol_regions()
         for i, symbol in enumerate(symbol_regions):
             kind_id, short_type, long_type = symbol.kind
-            next_symbol = symbol_regions[i+1] if i+1 < len(symbol_regions) else None
+            next_symbol = symbol_regions[i + 1] if i + 1 < len(symbol_regions) else None
 
             html += f"""
             <div
-                class='item {'active' if self._is_symbol_active(view, selected_lines, symbol, next_symbol) else ''}'
+                class='item {"active" if self._is_symbol_active(view, selected_lines, symbol, next_symbol) else ""}'
                 style='{indent_css(symbol)}'
             >
                 <i
-                    class='{self.KIND_CLASS_NAMES.get(kind_id, 'kind kind_ambiguous')}'
+                    class='{self.KIND_CLASS_NAMES.get(kind_id, "kind kind_ambiguous")}'
                     title='{long_type}'
                 >{short_type}</i>
                 <a
-                    href='{sublime.command_url('neo_code_map_goto_view_region', {'view_id': view.id(), 'region_begin': symbol.region.a})}'
+                    href='{sublime.command_url("neo_code_map_goto_view_region", {"view_id": view.id(), "region_begin": symbol.region.a})}'
                     title='{view.rowcol(symbol.region.begin())}'
                 >{symbol.name}</a>
-                <a href='{sublime.command_url('neo_code_map_goto_reference', {'view_id': view.id(), 'symbol': symbol.name})}'>⧉</a>
+                <a href='{sublime.command_url("neo_code_map_goto_reference", {"view_id": view.id(), "symbol": symbol.name})}'>⧉</a>
             </div>
             """
         html += "</body>"
@@ -366,9 +388,8 @@ class CodeMapManager:
 
     def move_to_region(self, view: sublime.View, region: sublime.Region):
         """Move the cursor to a specified region on the specified view"""
-        if (window := view.window()):
+        if window := view.window():
             window.focus_view(view)
-
 
         # Avoid selection bug when moving after jump
         view.sel().clear()
@@ -382,24 +403,30 @@ class CodeMapManager:
         view.sel().clear()
         view.sel().add(region.begin())
 
+
 class NeoCodeMapToggleCommand(sublime_plugin.WindowCommand):
     """Toggle the code map"""
+
     def name(self) -> str:
         return "neo_code_map_toggle"
 
     def run(self):
         map_manager.toggle(self.window)
 
+
 class NeoCodeMapCloseAllCommand(sublime_plugin.ApplicationCommand):
     """Close all code maps from all windows"""
+
     def name(self) -> str:
         return "neo_code_map_close_all"
 
     def run(self):
         map_manager.clear()
 
+
 class NeoCodeMapMoveCommand(sublime_plugin.WindowCommand):
     """Move up or down symbols on the code map"""
+
     def name(self) -> str:
         return "neo_code_map_move"
 
@@ -409,7 +436,11 @@ class NeoCodeMapMoveCommand(sublime_plugin.WindowCommand):
         if not view:
             return
 
-        symbol = map_manager.get_next_symbol(view) if direction == "down" else map_manager.get_previous_symbol(view)
+        symbol = (
+            map_manager.get_next_symbol(view)
+            if direction == "down"
+            else map_manager.get_previous_symbol(view)
+        )
 
         if not symbol:
             return
@@ -419,6 +450,7 @@ class NeoCodeMapMoveCommand(sublime_plugin.WindowCommand):
 
 class NeoCodeMapGotoViewRegionCommand(sublime_plugin.ApplicationCommand):
     """Unexposed: used as a callback when clicking on html links in the code map"""
+
     def name(self) -> str:
         return "neo_code_map_goto_view_region"
 
@@ -426,6 +458,7 @@ class NeoCodeMapGotoViewRegionCommand(sublime_plugin.ApplicationCommand):
         view = sublime.View(view_id)
         region = sublime.Region(region_begin)
         map_manager.move_to_region(view, region)
+
 
 class NoCodeMapGotoReferenceCommand(sublime_plugin.ApplicationCommand):
     """Unexposed: goto reference of a symbol on the current active view"""
@@ -443,8 +476,10 @@ class NoCodeMapGotoReferenceCommand(sublime_plugin.ApplicationCommand):
         window.focus_view(view)
         window.run_command("goto_reference", {"symbol": symbol})
 
+
 class NavigationListener(sublime_plugin.EventListener):
     """Synchronize codemap with user activity"""
+
     def on_selection_modified_async(self, view: sublime.View):
         map_manager.update_sheet()
 

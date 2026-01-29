@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1 - 2026-01-26
+
+- Update README about Package Control 🎉
+
 ## 1.4.0 - 2026-01-26
 
 - Add support for different `Indenter`

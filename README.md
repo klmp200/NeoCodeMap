@@ -56,7 +56,11 @@ This plugins has only been tested on Sublime Text >= 4200.
 
 ## Package Control
 
-Ongoing
+The easiest way to install is using [Package Control](https://packages.sublimetext.io/). It's listed as `NeoCodeMap`.
+
+1. Open `Command Palette` using <kbd>ctrl+shift+P</kbd> (Linux/Windows) or <kbd>cmd+shift+P</kbd> (OSX) or menu item `Tools -> Command Palette...`.
+2. Choose `Package Control: Install Package`.
+3. Find `NeoCodeMap` and hit <kbd>Enter</kbd>.
 
 ## Manual install
 
@@ -64,7 +68,7 @@ Clean repository in your `Packages` directory.
 
 # Command Palette
 
-Press `cmd+shift+p`. Type `neocodemap` to see the available commands:
+Press <kbd>ctrl+shift+P</kbd> (Linux/Windows) or <kbd>cmd+shift+p</kbd> (OSX). Type `neocodemap` to see the available commands:
 
 * **Toggle**: Toggle the code map view
 * **Close All**: Close all code maps on all windows

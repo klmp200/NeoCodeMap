@@ -52,7 +52,7 @@ indenter.register_indenter(None, my_default_indenter)
 
 # Installation
 
-This plugins has only been tested on Sublime Text >= 4200.
+This plugins is compatible with Sublime Text >= 4132.
 
 ## Package Control
 

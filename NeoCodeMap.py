@@ -14,7 +14,6 @@ def plugin_loaded():
     map_manager = CodeMapManager()
     settings = sublime.load_settings("NeoCodeMap.sublime-settings")
     css = sublime.load_resource("Packages/NeoCodeMap/NeoCodeMap.css")
-    # reload(indenter)
 
     for window in sublime.windows():
         map_manager.restore_sheet(window)
@@ -331,6 +330,22 @@ class CodeMapManager:
         self, view: Optional[sublime.View] = None
     ) -> Optional[sublime.SymbolRegion]:
         """Get the previous symbol region on the provided view. Use the current active view if unspecified"""
+
+        if not view:
+            view = sublime.active_window().active_view()
+
+        if not view:
+            return None
+
+        # If we are inside the scope of a symbol but not exactly on the symbol line
+        # We want to return the current symbol
+        current_symbol = self._get_around_active_symbol(-1, 0, view)
+        if current_symbol:
+            selected_lines = self.get_selected_lines(view)
+            if selected_lines and selected_lines[0] != view.rowcol(current_symbol.region.a)[0]:
+                return current_symbol
+
+        # Otherwise, we return the previous symbol
         return self._get_around_active_symbol(-1, -1, view)
 
     def get_html(self, view: Optional[sublime.View] = None) -> str:

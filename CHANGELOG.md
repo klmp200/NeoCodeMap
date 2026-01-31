@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.2 - 2026-01-26
+
+- Update Sublime compatibility based on API usage
+- Fix goto previous symbol when inside a symbol scope but not located on the symbol
+
 ## 1.4.1 - 2026-01-26
 
 - Update README about Package Control 🎉

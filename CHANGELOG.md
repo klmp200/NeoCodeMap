@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.3 - 2026-02-08
+
+- Add Menu entry
+
 ## 1.4.2 - 2026-01-26
 
 - Update Sublime compatibility based on API usage

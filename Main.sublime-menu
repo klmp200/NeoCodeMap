@@ -1,0 +1,42 @@
+[
+    {
+        "id": "preferences",
+        "children":
+        [
+            {
+                "caption": "Package Settings",
+                "mnemonic": "P",
+                "id": "package-settings",
+                "children":
+                [
+                    {
+                        "caption": "NeoCodeMap",
+                        "children":
+                        [
+                            {
+                                "caption": "README",
+                                "command": "open_file",
+                                "args":
+                                {
+                                    "file": "${packages}/NeoCodeMap/README.md"
+                                }
+                            },
+                            {
+                                "caption": "-"
+                            },
+                            {
+                                "caption": "Settings",
+                                "command": "edit_settings",
+                                "args":
+                                {
+                                    "base_file": "${packages}/NeoCodeMap/NeoCodeMap.sublime-settings",
+                                    "default": "{\n\t$0\n}\n"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]
